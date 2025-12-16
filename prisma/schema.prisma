@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  clerkId           String   @unique
+  email             String   @unique
+  firstName         String?
+  lastName          String?
+  phone             String?
+
+  // Company info
+  companyName       String?
+  companyAddress    Json?
+  hiringVolume      String?
+
+  // Stripe
+  stripeCustomerId  String?
+
+  // Terms
+  termsAcceptedAt   DateTime?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  subscription      Subscription?
+  jobRoles          JobRole[]
+  interviews        Interview[]
+  demoLeads         DemoLead[]
+}
+
+model Subscription {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id])
+
+  plan                  String   // 'trial', 'paygo', 'starter', 'growth', 'enterprise'
+  stripeSubscriptionId  String?
+
+  creditsRemaining      Int      @default(10)
+  creditsIncluded       Int?
+
+  status                String   @default("active") // 'active', 'expired', 'canceled'
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model JobRole {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+
+  title         String
+  customTitle   String?
+  hourlyWage    Decimal
+
+  interviewLink String   @unique
+  qrCodeUrl     String?
+
+  isActive      Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  interviews    Interview[]
+}
+
+model Interview {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  jobRoleId         String
+  jobRole           JobRole  @relation(fields: [jobRoleId], references: [id])
+
+  // Vapi data
+  vapiCallId        String?
+
+  // Candidate info
+  candidateName     String?
+  candidatePhone    String?
+  candidateLocation String?
+
+  // Interview data
+  status            String   @default("pending") // 'pending', 'in_progress', 'completed', 'failed'
+  score             Int?
+  answers           Json?
+  transcript        String?  @db.Text
+  recordingUrl      String?
+
+  durationSeconds   Int?
+  startedAt         DateTime?
+  completedAt       DateTime?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model DemoLead {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+
+  email           String
+  firstName       String?
+  lastName        String?
+  phone           String?
+  companyName     String?
+
+  demoCompleted   Boolean  @default(false)
+  demoResult      Json?
+  demoSummary     String?
+
+  convertedToTrial Boolean @default(false)
+
+  createdAt       DateTime @default(now())
+}
+
+model ReportToken {
+  id            String   @id @default(cuid())
+  token         String   @unique
+  interviewId   String
+
+  expiresAt     DateTime
+  viewedAt      DateTime?
+
+  createdAt     DateTime @default(now())
+}
