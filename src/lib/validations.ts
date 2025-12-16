@@ -24,7 +24,7 @@ export const signupSchema = z.object({
     city: z.string().min(1, "City is required"),
     state: z.string().min(2, "State is required"),
     zip: z.string().min(5, "ZIP code is required"),
-    country: z.string().default("US"),
+    country: z.string().optional(),
   }),
 
   // Hiring Info
